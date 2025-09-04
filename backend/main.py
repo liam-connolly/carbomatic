@@ -30,8 +30,7 @@ client = anthropic.Anthropic(
 
 class CarbCalculationRequest(BaseModel):
     weight_kg: float
-    marathon_duration_hours: float
-    intensity_level: str  # "moderate" or "high"
+    carb_load_days: int  # 2 or 3
 
 class CarbCalculationResponse(BaseModel):
     daily_carb_grams: float
@@ -54,15 +53,14 @@ async def root():
 @app.post("/calculate-carbs", response_model=CarbCalculationResponse)
 async def calculate_carbs(request: CarbCalculationRequest):
     try:
-        # Basic carb loading calculation
-        # Standard recommendation: 10-12g carbs per kg body weight for 2-3 days
-        if request.intensity_level == "high":
-            carbs_per_kg = 12
-        else:
-            carbs_per_kg = 10
+        # Carb loading calculation based on duration
+        if request.carb_load_days == 2:
+            carbs_per_kg = 12  # Intensive 2-day load
+        else:  # 3 days
+            carbs_per_kg = 8   # Classic 3-day load
         
         daily_carb_grams = request.weight_kg * carbs_per_kg
-        loading_days = 3  # Standard 3-day carb loading
+        loading_days = request.carb_load_days
         total_carb_grams = daily_carb_grams * loading_days
         
         return CarbCalculationResponse(
@@ -84,7 +82,7 @@ async def generate_meal_plan(request: MealPlanRequest):
         if request.meal_preferences:
             dietary_info += f"Meal preferences: {', '.join(request.meal_preferences)}. "
         
-        prompt = f"""Create a detailed {request.days}-day carb loading meal plan for a marathon runner who needs {request.daily_carb_grams}g of carbs per day.
+        prompt = f"""Create a detailed {request.days}-day marathon carb loading meal plan for a runner who needs {request.daily_carb_grams}g of carbs per day.
 
 {dietary_info}
 

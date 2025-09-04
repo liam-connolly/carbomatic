@@ -9,17 +9,16 @@ class handler(BaseHTTPRequestHandler):
             data = json.loads(post_data.decode('utf-8'))
             
             weight_kg = data['weight_kg']
-            marathon_duration_hours = data['marathon_duration_hours']
-            intensity_level = data['intensity_level']
+            carb_load_days = data['carb_load_days']
             
-            # Basic carb loading calculation
-            if intensity_level == "high":
-                carbs_per_kg = 12
-            else:
-                carbs_per_kg = 10
+            # Carb loading calculation based on duration
+            if carb_load_days == 2:
+                carbs_per_kg = 12  # Intensive 2-day load
+            else:  # 3 days
+                carbs_per_kg = 8   # Classic 3-day load
             
             daily_carb_grams = weight_kg * carbs_per_kg
-            loading_days = 3
+            loading_days = carb_load_days
             total_carb_grams = daily_carb_grams * loading_days
             
             response = {

@@ -29,7 +29,7 @@ class handler(BaseHTTPRequestHandler):
             if meal_preferences:
                 dietary_info += f"Meal preferences: {', '.join(meal_preferences)}. "
             
-            prompt = f"""Create a detailed {days}-day carb loading meal plan for a marathon runner who needs {daily_carb_grams}g of carbs per day.
+            prompt = f"""Create a detailed {days}-day marathon carb loading meal plan for a runner who needs {daily_carb_grams}g of carbs per day.
 
 {dietary_info}
 
