@@ -66,11 +66,11 @@ export default function FAQ() {
         What types of carbs should I eat?
       </Typography>
       <Typography sx={{ mb: 2 }}>
-        Focus on easily digestible carbohydrates that won't cause GI distress:
-        <br />" Pasta, rice, bread, oatmeal
-        <br />" Bananas, dates, and other fruits
-        <br />" Sports drinks and energy bars
-        <br />" Avoid high-fiber, high-fat, or unfamiliar foods
+        Focus on easily digestible carbohydrates that won&apos;t cause GI distress:
+        <br />&bull; Pasta, rice, bread, oatmeal
+        <br />&bull; Bananas, dates, and other fruits
+        <br />&bull; Sports drinks and energy bars
+        <br />&bull; Avoid high-fiber, high-fat, or unfamiliar foods
       </Typography>
 
       <Typography
@@ -160,7 +160,7 @@ export default function FAQ() {
       <Typography sx={{ mb: 2 }}>
         For more detailed information about sports nutrition and carb loading,
         consult resources from:
-        <br />"{' '}
+        <br />&bull;{' '}
         <a
           href='https://www.acsm.org/'
           target='_blank'
@@ -169,7 +169,7 @@ export default function FAQ() {
         >
           American College of Sports Medicine
         </a>
-        <br />"{' '}
+        <br />&bull;{' '}
         <a
           href='https://www.sportsdietitians.com.au/'
           target='_blank'
@@ -178,7 +178,7 @@ export default function FAQ() {
         >
           Sports Dietitians Australia
         </a>
-        <br />" Your local sports nutritionist or registered dietitian
+        <br />&bull; Your local sports nutritionist or registered dietitian
       </Typography>
 
       <Typography
