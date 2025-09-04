@@ -1,103 +1,288 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+
+// API base URL - works for both dev and production
+const getApiUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side
+    return process.env.NODE_ENV === 'production' 
+      ? window.location.origin 
+      : 'http://localhost:8000';
+  }
+  return '';
+};
+
+interface CarbResult {
+  daily_carb_grams: number;
+  total_carb_grams: number;
+  loading_days: number;
+}
+
+interface MealPlan {
+  [key: string]: {
+    breakfast: { meal: string; carbs: number };
+    lunch: { meal: string; carbs: number };
+    dinner: { meal: string; carbs: number };
+    snacks: { snack: string; carbs: number }[];
+    total_carbs: number;
+    hydration_notes: string;
+  };
+}
+
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [weight, setWeight] = useState('');
+  const [duration, setDuration] = useState('');
+  const [intensity, setIntensity] = useState('moderate');
+  const [carbResult, setCarbResult] = useState<CarbResult | null>(null);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const calculateCarbs = async () => {
+    if (!weight || !duration) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${getApiUrl()}/api/calculate-carbs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          weight_kg: parseFloat(weight),
+          marathon_duration_hours: parseFloat(duration),
+          intensity_level: intensity,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate carbs');
+      }
+
+      const result = await response.json();
+      setCarbResult(result);
+    } catch (err) {
+      setError('Error calculating carbs. Make sure the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateMealPlan = async () => {
+    if (!carbResult) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${getApiUrl()}/api/generate-meal-plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          daily_carb_grams: carbResult.daily_carb_grams,
+          days: carbResult.loading_days,
+          dietary_restrictions: [],
+          meal_preferences: [],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate meal plan');
+      }
+
+      const result = await response.json();
+      setMealPlan(result.meal_plan);
+    } catch (err) {
+      setError('Error generating meal plan. Make sure you have sufficient Claude API credits.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className='min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-4xl mx-auto'>
+        <div className='text-center'>
+          <h1 className='text-3xl font-bold text-gray-900 mb-8'>
+            🏃‍♂️ Carbomatic - Marathon Carb Loading Calculator
+          </h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Carb Calculator Form */}
+        <div className='bg-white rounded-lg shadow-md p-6 mb-8'>
+          <h2 className='text-xl font-semibold mb-4'>
+            Calculate Your Carb Loading Needs
+          </h2>
+
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Weight (kg)
+              </label>
+              <input
+                type='number'
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                placeholder='70'
+              />
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Expected Marathon Time (hours)
+              </label>
+              <input
+                type='number'
+                step='0.5'
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+                placeholder='4.5'
+              />
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Intensity Level
+              </label>
+              <select
+                value={intensity}
+                onChange={(e) => setIntensity(e.target.value)}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              >
+                <option value='moderate'>Moderate</option>
+                <option value='high'>High</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={calculateCarbs}
+            disabled={loading}
+            className='w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+          >
+            {loading ? 'Calculating...' : 'Calculate Carb Needs'}
+          </button>
+
+          {error && (
+            <div className='mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded'>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Carb Results */}
+        {carbResult && (
+          <div className='bg-white rounded-lg shadow-md p-6 mb-8'>
+            <h2 className='text-xl font-semibold mb-4'>
+              Your Carb Loading Plan
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-4'>
+              <div className='text-center p-4 bg-blue-50 rounded-lg'>
+                <div className='text-2xl font-bold text-blue-600'>
+                  {Math.round(carbResult.daily_carb_grams)}g
+                </div>
+                <div className='text-sm text-gray-600'>Carbs per day</div>
+              </div>
+              <div className='text-center p-4 bg-green-50 rounded-lg'>
+                <div className='text-2xl font-bold text-green-600'>
+                  {carbResult.loading_days} days
+                </div>
+                <div className='text-sm text-gray-600'>Loading period</div>
+              </div>
+              <div className='text-center p-4 bg-purple-50 rounded-lg'>
+                <div className='text-2xl font-bold text-purple-600'>
+                  {Math.round(carbResult.total_carb_grams)}g
+                </div>
+                <div className='text-sm text-gray-600'>Total carbs</div>
+              </div>
+            </div>
+
+            <button
+              onClick={generateMealPlan}
+              disabled={loading}
+              className='w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              {loading
+                ? 'Generating Meal Plan...'
+                : 'Generate AI Meal Plan with Claude'}
+            </button>
+            
+          </div>
+        )}
+
+        {/* Meal Plan Results */}
+        {mealPlan && (
+          <div className='bg-white rounded-lg shadow-md p-6'>
+            <h2 className='text-xl font-semibold mb-4'>
+              Your Personalized Meal Plan
+            </h2>
+            
+            {Object.entries(mealPlan).map(([day, plan]) => (
+              <div
+                key={day}
+                className='mb-6 p-4 border border-gray-200 rounded-lg'
+              >
+                <h3 className='text-lg font-semibold mb-3 capitalize'>
+                  {day.replace('_', ' ')}
+                </h3>
+                
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div>
+                    <h4 className='font-medium text-gray-700 mb-2'>🍳 Breakfast</h4>
+                    <p className='text-sm'>{plan.breakfast.meal}</p>
+                    <p className='text-xs text-blue-600 font-medium'>{plan.breakfast.carbs}g carbs</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className='font-medium text-gray-700 mb-2'>🥗 Lunch</h4>
+                    <p className='text-sm'>{plan.lunch.meal}</p>
+                    <p className='text-xs text-blue-600 font-medium'>{plan.lunch.carbs}g carbs</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className='font-medium text-gray-700 mb-2'>🍽️ Dinner</h4>
+                    <p className='text-sm'>{plan.dinner.meal}</p>
+                    <p className='text-xs text-blue-600 font-medium'>{plan.dinner.carbs}g carbs</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className='font-medium text-gray-700 mb-2'>🍌 Snacks</h4>
+                    {plan.snacks.map((snack, index) => (
+                      <div key={index} className='text-sm mb-1'>
+                        <p>{snack.snack}</p>
+                        <p className='text-xs text-blue-600 font-medium'>{snack.carbs}g carbs</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className='mt-3 pt-3 border-t border-gray-200'>
+                  <p className='font-medium text-green-600'>
+                    Daily Total: {plan.total_carbs}g carbs
+                  </p>
+                  {plan.hydration_notes && (
+                    <p className='text-sm text-gray-600 mt-1'>
+                      💧 {plan.hydration_notes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
