@@ -14,6 +14,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Button,
 } from '@mui/material';
 import {
   Restaurant as RestaurantIcon,
@@ -36,9 +37,11 @@ interface MealPlan {
 
 interface MealPlanDisplayProps {
   mealPlan: MealPlan;
+  onBack?: () => void;
+  onStartOver?: () => void;
 }
 
-export default function MealPlanDisplay({ mealPlan }: MealPlanDisplayProps) {
+export default function MealPlanDisplay({ mealPlan, onBack, onStartOver }: MealPlanDisplayProps) {
   const mealIcons = {
     breakfast: <CoffeeIcon />,
     lunch: <RestaurantIcon />,
@@ -230,6 +233,45 @@ export default function MealPlanDisplay({ mealPlan }: MealPlanDisplayProps) {
           </Grid>
         ))}
       </Grid>
+      
+      {/* Navigation Buttons */}
+      {(onBack || onStartOver) && (
+        <Box sx={{ display: 'flex', gap: 2, mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+          {onBack && (
+            <Button
+              variant='outlined'
+              size='large'
+              onClick={onBack}
+              sx={{
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+                minWidth: 120,
+              }}
+            >
+              Back
+            </Button>
+          )}
+          {onStartOver && (
+            <Button
+              variant='contained'
+              size='large'
+              color='primary'
+              onClick={onStartOver}
+              sx={{
+                flex: 1,
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+              }}
+            >
+              Start Over
+            </Button>
+          )}
+        </Box>
+      )}
     </Paper>
   );
 }

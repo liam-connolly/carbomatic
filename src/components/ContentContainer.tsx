@@ -42,6 +42,7 @@ export default function ContentContainer() {
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [currentStep, setCurrentStep] = useState(1); // 1: form, 2: results, 3: meal plan
   const [faq] = useQueryState('faq');
 
   const calculateCarbs = async () => {
@@ -75,6 +76,7 @@ export default function ContentContainer() {
 
       const result = await response.json();
       setCarbResult(result);
+      setCurrentStep(2); // Move to results screen
     } catch (err) {
       setError('Error calculating carbs. Make sure the backend is running.');
     } finally {
@@ -82,7 +84,7 @@ export default function ContentContainer() {
     }
   };
 
-  const generateMealPlan = async () => {
+  const generateMealPlan = async (foodPreferences: string[] = []) => {
     if (!carbResult) return;
 
     setLoading(true);
@@ -98,7 +100,7 @@ export default function ContentContainer() {
           daily_carb_grams: carbResult.daily_carb_grams,
           days: carbResult.loading_days,
           dietary_restrictions: [],
-          meal_preferences: [],
+          meal_preferences: foodPreferences,
         }),
       });
 
@@ -108,6 +110,7 @@ export default function ContentContainer() {
 
       const result = await response.json();
       setMealPlan(result.meal_plan);
+      setCurrentStep(3); // Move to meal plan screen
     } catch (err) {
       setError(
         'Error generating meal plan. Make sure you have sufficient Claude API credits.'
@@ -117,10 +120,18 @@ export default function ContentContainer() {
     }
   };
 
-  return faq ? (
-    <FAQ />
-  ) : (
-    <>
+  const goBackToStep = (step: number) => {
+    setCurrentStep(step);
+    setError('');
+  };
+
+  if (faq) {
+    return <FAQ />;
+  }
+
+  // Step 1: Calculator Form
+  if (currentStep === 1) {
+    return (
       <CarbCalculatorForm
         weight={weight}
         setWeight={setWeight}
@@ -130,16 +141,42 @@ export default function ContentContainer() {
         error={error}
         onCalculate={calculateCarbs}
       />
+    );
+  }
 
-      {carbResult && (
-        <CarbResults
-          carbResult={carbResult}
-          loading={loading}
-          onGenerateMealPlan={generateMealPlan}
-        />
-      )}
+  // Step 2: Carb Results
+  if (currentStep === 2 && carbResult) {
+    return (
+      <CarbResults
+        carbResult={carbResult}
+        loading={loading}
+        onGenerateMealPlan={generateMealPlan}
+        onBack={() => goBackToStep(1)}
+      />
+    );
+  }
 
-      {mealPlan && <MealPlanDisplay mealPlan={mealPlan} />}
-    </>
+  // Step 3: Meal Plan
+  if (currentStep === 3 && mealPlan) {
+    return (
+      <MealPlanDisplay 
+        mealPlan={mealPlan}
+        onBack={() => goBackToStep(2)}
+        onStartOver={() => goBackToStep(1)}
+      />
+    );
+  }
+
+  // Fallback to step 1
+  return (
+    <CarbCalculatorForm
+      weight={weight}
+      setWeight={setWeight}
+      carbLoadDays={carbLoadDays}
+      setCarbLoadDays={setCarbLoadDays}
+      loading={loading}
+      error={error}
+      onCalculate={calculateCarbs}
+    />
   );
 }
